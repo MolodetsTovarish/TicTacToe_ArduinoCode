@@ -8,9 +8,7 @@ const int win = 1;
 const int draw = 0;
 const int game_cont = -1;
 
-boolean x_player = true;
-boolean o_player = false;
-boolean current_player = x_player;
+boolean current_player = x;
 
 int board[9];
 
@@ -63,10 +61,10 @@ int getMove() {
 }
 
 void prompt() {
-  if (current_player == x_player) {
+  if (current_player == x) {
     Serial.println("X's move");
   }
-  else if (current_player == o_player) {
+  else if (current_player == o) {
     Serial.println("O's move");
   }
   else {
@@ -75,10 +73,10 @@ void prompt() {
 }
 
 void winPrompt() {
-  if (current_player == x_player) {
+  if (current_player == x) {
     Serial.println("X wins");
   }
-  else if (current_player == o_player) {
+  else if (current_player == o) {
     Serial.println("O wins");
   }
 }
@@ -87,13 +85,10 @@ boolean validMove(int i) {
   if (board[i - 1] != empty || (i > 9 || i < 1)) {
     return false;
   }
-  else if (current_player == x_player) {
-    board[i - 1] = x;
+  else  {
+    board[i - 1] = current_player;
+    return true;
   }
-  else if (current_player == o_player) {
-    board[i - 1] = o;
-  }
-  return true;
 }
 
 void displayBoard() {
@@ -121,12 +116,6 @@ void printCell(int cell) {
 
 boolean check3(int p1, int p2, int p3) {
   if (board[p1 - 1] == current_player && board[p2 - 1] == current_player && board[p3 - 1] == current_player) {
-    Serial.println(p1);
-    Serial.println(p2);
-    Serial.println(p3);
-    Serial.println(board[p1 - 1]);
-    Serial.println(board[p2 - 1]);
-    Serial.println(board[p3 - 1]);
     return true;
   }
   else {
