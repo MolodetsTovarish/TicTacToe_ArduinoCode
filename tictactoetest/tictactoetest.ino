@@ -1,11 +1,25 @@
 #include "math.h"
 #include <IRremote.h>
+#include "LedControl.h"
+
+/*
+ Now we need a LedControl to work with.
+ ***** These pin numbers will probably not work with your hardware *****
+ pin 12 is connected to the DataIn 
+ pin 11 is connected to the CLK 
+ pin 10 is connected to LOAD 
+ We have only a single MAX72XX.
+ */
+LedControl lc=LedControl(12,11,10,1);
 
 int input_pin = 8; //set D10 as input signal pin
 IRrecv irrecv(input_pin);
 decode_results signals;
 
 int move;
+int r;
+int c;
+
 const int empty = -1;
 const int x = 1;
 const int o = 0;
@@ -21,6 +35,15 @@ int board[9];
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
+  /*
+   The MAX72XX is in power-saving mode on startup,
+   we have to do a wakeup call
+   */
+  lc.shutdown(0,false);
+  /* Set the brightness to a medium values */
+  lc.setIntensity(0,8);
+  /* and clear the display */
+  lc.clearDisplay(0);
   irrecv.enableIRIn(); // enable input from IR receiver
   startGame();
 }
