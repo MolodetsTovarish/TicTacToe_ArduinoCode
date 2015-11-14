@@ -5,12 +5,12 @@
 /*
  Now we need a LedControl to work with.
  ***** These pin numbers will probably not work with your hardware *****
- pin 12 is connected to the DataIn 
- pin 11 is connected to the CLK 
- pin 10 is connected to LOAD 
+ pin 12 is connected to the DataIn
+ pin 11 is connected to the CLK
+ pin 10 is connected to LOAD
  We have only a single MAX72XX.
  */
-LedControl lc=LedControl(12,11,10,1);
+LedControl lc = LedControl(12, 11, 10, 1);
 
 int input_pin = 8; //set D10 as input signal pin
 IRrecv irrecv(input_pin);
@@ -39,9 +39,9 @@ void setup() {
    The MAX72XX is in power-saving mode on startup,
    we have to do a wakeup call
    */
-  lc.shutdown(0,false);
+  lc.shutdown(0, false);
   /* Set the brightness to a medium values */
-  lc.setIntensity(0,8);
+  lc.setIntensity(0, 6);
   /* and clear the display */
   lc.clearDisplay(0);
   irrecv.enableIRIn(); // enable input from IR receiver
@@ -51,30 +51,30 @@ void setup() {
 void loop() {
 
   //while (Serial.available() > 0) {
-    
-    int move = take_move_from_ir();
-    Serial.print("the move is: ");
-    Serial.println(move);
-    if (validMove(move) == false) {
-      Serial.println("Invalid move");
+
+  int move = take_move_from_ir();
+  Serial.print("the move is: ");
+  Serial.println(move);
+  if (validMove(move) == false) {
+    Serial.println("Invalid move");
+  }
+  else {
+    displayBoard(move);
+    int outcome = move_outcome();
+    if (outcome == win) {
+      Serial.println("Game Over");
+      winPrompt();
+      startGame();
     }
-    else {
-      displayBoard();
-      int outcome = move_outcome();
-      if (outcome == win) {
-        Serial.println("Game Over");
-        winPrompt();
-        startGame();
-      }
-      else if (outcome == draw) {
-        Serial.println("Draw");
-        startGame();
-      }
-      else if (outcome == game_cont) {
-        current_player = !current_player;
-        prompt();
-      }
+    else if (outcome == draw) {
+      Serial.println("Draw");
+      startGame();
     }
+    else if (outcome == game_cont) {
+      current_player = !current_player;
+      prompt();
+    }
+  }
   //}
 }
 
@@ -121,15 +121,10 @@ boolean validMove(int i) {
   }
 }
 
-void displayBoard() {
-  int k = 0;
-  for (int r = 1; r < 4; r++) {
-    for (int c = 1; c < 4; c++) {
-      printCell(board[k]);
-      k = k + 1;
-    }
-    Serial.println();
-  }
+void displayBoard(int move) {
+  // We will show the last move
+  // The alternative is to redraw the whole board
+  show_last_move(move, current_player);
 }
 
 void printCell(int cell) {
@@ -220,8 +215,9 @@ int take_move_from_ir() {
 // Return -1 if any other code
 int get_number_from_code(int code) {
   int codes[9] = {16724175, 16718055, 16743045, 16716015, 16726215, 16734885,
-                  16728765, 16730805, 16732845};
-                  
+                  16728765, 16730805, 16732845
+                 };
+
   int repetition = 4294967295;
 
   // Return false for repetition code
@@ -235,6 +231,29 @@ int get_number_from_code(int code) {
   // This must be something else (not 1 to 9)
   return -1;
 }
+
+void show_last_move(int move, int current_player) {
+  // Find the row and column  in 3x3 matrix, givent the move
+  Serial.println("Showing the move on LED...");
+  const int dim = 3;
+  int row = ((int) (move - 1)) / dim;
+  int column = (move - 1) - dim * row;
+  // find top left corner in 8x8 matrix (for LED control)
+  int led_row = 3*row;
+  int led_column = 3*column;
+  Serial.println(led_row);
+  Serial.println(led_column);
+  // Light up the move
+  if (current_player == x) {
+    lc.setLed(0, led_row, led_column, true);
+    lc.setLed(0, led_row + 1, led_column + 1, true);
+  } else if (current_player == o) {
+    lc.setLed(0, led_row, led_column, true);
+    lc.setLed(0, led_row+1, led_column, true);
+    lc.setLed(0, led_row, led_column + 1, true);
+    lc.setLed(0, led_row + 1, led_column + 1, true);
+  }
+}
 //boolean gameOver{
 
 //}
@@ -242,4 +261,5 @@ int get_number_from_code(int code) {
 //boolean swapPlayers{
 //  return !current_player;
 //}
+
 
