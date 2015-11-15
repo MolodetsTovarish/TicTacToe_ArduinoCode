@@ -34,7 +34,9 @@ int board[9];
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(9600);
+  //Serial.begin(9600);
+
+  irrecv.enableIRIn(); // enable input from IR receiver
   /*
    The MAX72XX is in power-saving mode on startup,
    we have to do a wakeup call
@@ -44,7 +46,7 @@ void setup() {
   lc.setIntensity(0, 6);
   /* and clear the display */
   lc.clearDisplay(0);
-  irrecv.enableIRIn(); // enable input from IR receiver
+  
   startGame();
 }
 
@@ -53,37 +55,38 @@ void loop() {
   //while (Serial.available() > 0) {
 
   int move = take_move_from_ir();
-  Serial.print("the move is: ");
-  Serial.println(move);
+  //Serial.print("the move is: ");
+  //Serial.println(move);
   if (validMove(move) == false) {
-    Serial.println("Invalid move");
+    //Serial.println("Invalid move");
   }
   else {
     displayBoard(move);
     int outcome = move_outcome();
     if (outcome == win) {
-      Serial.println("Game Over");
-      winPrompt();
+      //Serial.println("Game Over");
+      //winPrompt();
       startGame();
     }
     else if (outcome == draw) {
-      Serial.println("Draw");
+      //Serial.println("Draw");
       startGame();
     }
     else if (outcome == game_cont) {
       current_player = !current_player;
-      prompt();
+      //prompt();
     }
   }
   //}
 }
 
 void startGame() {
-  Serial.println("Start game");
-  prompt();
-  for (int i = 0; i < 9; i++) {
-    board[i] = empty;
-  }
+  //Serial.println("Start game");
+  //prompt();
+  //for (int i = 0; i < 9; i++) {
+  //  board[i] = empty;
+  //}
+  clearBoard();
 }
 
 int getMove() {
@@ -253,6 +256,10 @@ void show_last_move(int move, int current_player) {
     lc.setLed(0, led_row, led_column + 1, true);
     lc.setLed(0, led_row + 1, led_column + 1, true);
   }
+}
+
+void clearBoard(){
+  lc.clearDisplay(0);
 }
 //boolean gameOver{
 
