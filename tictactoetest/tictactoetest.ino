@@ -83,9 +83,9 @@ void loop() {
 void startGame() {
   //Serial.println("Start game");
   //prompt();
-  //for (int i = 0; i < 9; i++) {
-  //  board[i] = empty;
-  //}
+  for (int i = 0; i < 9; i++) {
+    board[i] = empty;
+  }
   clearBoard();
 }
 
