@@ -31,6 +31,7 @@ const int game_cont = -1;
 boolean current_player = x;
 
 int board[9];
+int winning_cells[3];
 
 void setup() {
   // put your setup code here, to run once:
@@ -65,7 +66,7 @@ void loop() {
     int outcome = move_outcome();
     if (outcome == win) {
       //Serial.println("Game Over");
-      //winPrompt();
+      winPrompt();
       startGame();
     }
     else if (outcome == draw) {
@@ -106,12 +107,7 @@ void prompt() {
 }
 
 void winPrompt() {
-  if (current_player == x) {
-    Serial.println("X wins");
-  }
-  else if (current_player == o) {
-    Serial.println("O wins");
-  }
+  show_winning_cells(current_player);
 }
 
 boolean validMove(int i) {
@@ -144,6 +140,9 @@ void printCell(int cell) {
 
 boolean check3(int p1, int p2, int p3) {
   if (board[p1 - 1] == current_player && board[p2 - 1] == current_player && board[p3 - 1] == current_player) {
+    winning_cells[0] = p1;
+    winning_cells[1] = p2;
+    winning_cells[2] = p3;
     return true;
   }
   else {
@@ -237,16 +236,34 @@ int get_number_from_code(int code) {
 
 void show_last_move(int move, int current_player) {
   // Find the row and column  in 3x3 matrix, givent the move
-  Serial.println("Showing the move on LED...");
+  //Serial.println("Showing the move on LED...");
   const int dim = 3;
   int row = ((int) (move - 1)) / dim;
   int column = (move - 1) - dim * row;
   // find top left corner in 8x8 matrix (for LED control)
   int led_row = 3*row;
   int led_column = 3*column;
-  Serial.println(led_row);
-  Serial.println(led_column);
-  // Light up the move
+  light_up_cell(led_row, led_column, current_player);
+ 
+}
+
+void clearBoard(){
+  lc.clearDisplay(0);
+}
+
+void show_winning_cells(int current_player) {
+  int number_of_blinks = 3;
+  int blink_delay = 1000;
+  for (int i = 0; i < number_of_blinks; i++) {
+    turn_winning_cells_off();
+    delay(blink_delay);
+    turn_winning_cells_on();
+    delay(blink_delay);
+  }
+}
+
+void light_up_cell(int led_row, int led_column, int current_player) {
+   // Light up the cell
   if (current_player == x) {
     lc.setLed(0, led_row, led_column, true);
     lc.setLed(0, led_row + 1, led_column + 1, true);
@@ -258,15 +275,30 @@ void show_last_move(int move, int current_player) {
   }
 }
 
-void clearBoard(){
-  lc.clearDisplay(0);
+void turn_winning_cells_off() {
+  const int dim = 3;
+  for (int i = 0 ; i < 3; i++) {
+    int row = ((int) (winning_cells[i] - 1)) / dim;
+    int column = (winning_cells[i] - 1) - dim * row;
+    int led_row = 3*row;
+    int led_column = 3*column;
+    lc.setLed(0, led_row, led_column, false);
+    lc.setLed(0, led_row+1, led_column, false);
+    lc.setLed(0, led_row, led_column + 1, false);
+    lc.setLed(0, led_row + 1, led_column + 1, false);
+  }
 }
-//boolean gameOver{
 
-//}
+void turn_winning_cells_on() {
+  const int dim = 3;
+  for (int i = 0 ; i < 3; i++) {
+    int row = ((int) (winning_cells[i] - 1)) / dim;
+    int column = (winning_cells[i] - 1) - dim * row;
+    int led_row = 3*row;
+    int led_column = 3*column;
+    light_up_cell(led_row, led_column, current_player);
+  }
+}
 
-//boolean swapPlayers{
-//  return !current_player;
-//}
 
 
