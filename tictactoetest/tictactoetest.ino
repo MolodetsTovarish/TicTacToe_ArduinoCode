@@ -33,6 +33,14 @@ boolean current_player = x;
 int board[9];
 int winning_cells[3];
 
+// 2x2 cell representations for 'x', 'o' and empty cell
+int x_cell[4] = {true, false, false, true}; // "left slash" shape
+int o_cell[4] = {true, true, true, true};   // "square" shape
+int empty_cell[4] = {false, false, false, false}; // empty 2x2 cell
+
+// flag to indicate if the game is in progress
+boolean waiting_for_start = true;
+
 void setup() {
   // put your setup code here, to run once:
   //Serial.begin(9600);
@@ -45,9 +53,7 @@ void setup() {
   lc.shutdown(0, false);
   /* Set the brightness to a medium values */
   lc.setIntensity(0, 6);
-  /* and clear the display */
-  lc.clearDisplay(0);
-  
+ 
   startGame();
 }
 
@@ -56,6 +62,11 @@ void loop() {
   //while (Serial.available() > 0) {
 
   int move = take_move_from_ir();
+  // Clear splash screen, if this is a first move
+  if (waiting_for_start) {
+    clearBoard();
+    waiting_for_start = false;
+  }
   //Serial.print("the move is: ");
   //Serial.println(move);
   if (validMove(move) == false) {
@@ -70,7 +81,7 @@ void loop() {
       startGame();
     }
     else if (outcome == draw) {
-      //Serial.println("Draw");
+      drawPrompt();
       startGame();
     }
     else if (outcome == game_cont) {
@@ -82,16 +93,9 @@ void loop() {
 }
 
 void startGame() {
-  //Serial.println("Start game");
-  //prompt();
-  for (int i = 0; i < 9; i++) {
-    board[i] = empty;
-  }
   clearBoard();
-}
-
-int getMove() {
-  return Serial.parseInt();
+  splashScreen();
+  waiting_for_start = true;
 }
 
 void prompt() {
@@ -110,6 +114,22 @@ void winPrompt() {
   show_winning_cells(current_player);
 }
 
+void drawPrompt() {
+  // Blink all cells 3 times
+  int number_of_blinks = 3;
+  int blink_delay = 1000;
+  for (int i = 0; i < number_of_blinks; i++) {
+    for (int i = 1; i < 10; i++) {
+      draw_cell(i, empty);
+    }
+    delay(blink_delay);
+    for (int i = 1; i < 10; i++) {
+      draw_cell(i, board[i-1]);
+    }
+    delay(blink_delay);
+  }
+}
+
 boolean validMove(int i) {
   if (board[i - 1] != empty || (i > 9 || i < 1)) {
     return false;
@@ -120,23 +140,13 @@ boolean validMove(int i) {
   }
 }
 
+
 void displayBoard(int move) {
   // We will show the last move
   // The alternative is to redraw the whole board
   show_last_move(move, current_player);
 }
 
-void printCell(int cell) {
-  if (cell == x) {
-    Serial.print("X ");
-  }
-  else if (cell == o) {
-    Serial.print("O ");
-  }
-  else if (cell == empty) {
-    Serial.print("_ ");
-  }
-}
 
 boolean check3(int p1, int p2, int p3) {
   if (board[p1 - 1] == current_player && board[p2 - 1] == current_player && board[p3 - 1] == current_player) {
@@ -187,7 +197,7 @@ int move_outcome() {
 }
 
 boolean is_draw() {
-  for (int n = 0; n < 8; n++) {
+  for (int n = 0; n < 9; n++) {
     if (board[n] == empty) {
       return false;
     }
@@ -237,67 +247,67 @@ int get_number_from_code(int code) {
 void show_last_move(int move, int current_player) {
   // Find the row and column  in 3x3 matrix, givent the move
   //Serial.println("Showing the move on LED...");
-  const int dim = 3;
-  int row = ((int) (move - 1)) / dim;
-  int column = (move - 1) - dim * row;
-  // find top left corner in 8x8 matrix (for LED control)
-  int led_row = 3*row;
-  int led_column = 3*column;
-  light_up_cell(led_row, led_column, current_player);
+  draw_cell(move, current_player);
  
 }
 
 void clearBoard(){
+  // empty model (board array)
+   for (int i = 0; i < 9; i++) {
+    board[i] = empty;
+  }
+  // Clear LED matrix display
   lc.clearDisplay(0);
+}
+
+void splashScreen() {
+  byte splash[8] = {B10101110, B01001010, B10101110, B00000000, B11101010, B10100100, B11101010, B00000000};
+  for (int i = 0; i < 8; i++) {
+    lc.setRow(0, i, splash[i]);  
+  }
 }
 
 void show_winning_cells(int current_player) {
   int number_of_blinks = 3;
   int blink_delay = 1000;
   for (int i = 0; i < number_of_blinks; i++) {
-    turn_winning_cells_off();
+    for (int i = 0 ; i < 3; i++) {
+      draw_cell(winning_cells[i], empty);
+    }
     delay(blink_delay);
-    turn_winning_cells_on();
+    for (int i = 0 ; i < 3; i++) {
+      draw_cell(winning_cells[i], board[winning_cells[i] - 1]);
+    }
     delay(blink_delay);
   }
 }
 
-void light_up_cell(int led_row, int led_column, int current_player) {
-   // Light up the cell
-  if (current_player == x) {
-    lc.setLed(0, led_row, led_column, true);
-    lc.setLed(0, led_row + 1, led_column + 1, true);
-  } else if (current_player == o) {
-    lc.setLed(0, led_row, led_column, true);
-    lc.setLed(0, led_row+1, led_column, true);
-    lc.setLed(0, led_row, led_column + 1, true);
-    lc.setLed(0, led_row + 1, led_column + 1, true);
+// 'cell' is a number from 1 to 9, 'cell_mode' is x, o or empty
+void draw_cell(int cell, int cell_mode) {
+  // Calculate top left coordinates of 2x2 cell in 8x8 LED matrix
+  const int dim = 3;
+  int row = ((int) (cell - 1)) / dim;
+  int column = (cell - 1) - dim * row;
+  // find top left corner in 8x8 matrix (for LED control)
+  int led_row = 3*row;
+  int led_column = 3*column;
+  
+  if (cell_mode == x) {
+    draw_matrix_cell(led_row, led_column, x_cell);
+  } else if (cell_mode == o) {
+    draw_matrix_cell(led_row, led_column, o_cell);
+  } else if (cell_mode == empty) {
+    draw_matrix_cell(led_row, led_column, empty_cell);
   }
 }
 
-void turn_winning_cells_off() {
-  const int dim = 3;
-  for (int i = 0 ; i < 3; i++) {
-    int row = ((int) (winning_cells[i] - 1)) / dim;
-    int column = (winning_cells[i] - 1) - dim * row;
-    int led_row = 3*row;
-    int led_column = 3*column;
-    lc.setLed(0, led_row, led_column, false);
-    lc.setLed(0, led_row+1, led_column, false);
-    lc.setLed(0, led_row, led_column + 1, false);
-    lc.setLed(0, led_row + 1, led_column + 1, false);
-  }
-}
-
-void turn_winning_cells_on() {
-  const int dim = 3;
-  for (int i = 0 ; i < 3; i++) {
-    int row = ((int) (winning_cells[i] - 1)) / dim;
-    int column = (winning_cells[i] - 1) - dim * row;
-    int led_row = 3*row;
-    int led_column = 3*column;
-    light_up_cell(led_row, led_column, current_player);
-  }
+// Draws 2x2 cell starting with top left coordinates
+// 'lights'  array contains flags (true/false to turn on/off) for each LED cell within 2x2 cell
+void draw_matrix_cell(int top_left_row, int top_left_col, int* lights) {
+    lc.setLed(0, top_left_row, top_left_col, lights[0]);
+    lc.setLed(0, top_left_row+1, top_left_col, lights[1]);
+    lc.setLed(0, top_left_row, top_left_col + 1, lights[2]);
+    lc.setLed(0, top_left_row + 1, top_left_col + 1, lights[3]);
 }
 
 
